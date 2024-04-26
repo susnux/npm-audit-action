@@ -25,7 +25,7 @@ export function runNpmAudit(fix = false): Promise<string> {
 				reject(error)
 				return
 			}
-			resolve(stdout)
+			resolve(stdout.slice(stdout.indexOf('{')))
 		}),
 	)
 }
@@ -98,8 +98,18 @@ export async function run() {
 		core.debug(`Setting working directory to "${resolvedWD}".`)
 		process.chdir(resolvedWD)
 
-		const output = await runNpmAudit()
-		const data = JSON.parse(output)
+		const output = await runNpmAudit(fix)
+		let data = JSON.parse(output)
+		if (fix) {
+			// Print some information
+			core.info(`[npm audit] Added   ${data.added} packages`)
+			core.info(`[npm audit] Removed ${data.removed} packages`)
+			core.info(`[npm audit] Changed ${data.changed} packages`)
+			core.info(`[npm audit] Audited ${data.audited} packages`)
+			// Set data to the audit report
+			data = data.audit
+		}
+
 		const issues = Object.values(data.vulnerabilities) as never[]
 		const totalIssues = issues.length
 		const fixableIssues = issues.filter(isFixable).length
@@ -117,10 +127,6 @@ export async function run() {
 				return
 			}
 			await writeFile(resolvedPath, formattedOutput)
-		}
-
-		if (fix) {
-			await runNpmAudit(true)
 		}
 	} catch (error) {
 		// Fail the workflow run if an error occurs

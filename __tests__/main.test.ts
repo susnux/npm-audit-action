@@ -38,6 +38,20 @@ describe('runNpmAudit', () => {
 		expect(childProcess.exec.mock.calls[0][0]).toMatch('npm audit --json fix')
 	})
 
+	it('Outputs only the JSON', async () => {
+		// when fixing it also outputs the install stuff
+		childProcess.exec.mockImplementationOnce((command, callback) => {
+			callback(
+				null,
+				'add   foo  6.5.4 -> 6.5.5   \nadd   bar  0.1.0 -> 1.0.0   \n{\n}',
+				'',
+			)
+		})
+
+		const output = await runNpmAudit(false)
+		expect(output).toBe('{\n}')
+	})
+
 	it('writes debug output', async () => {
 		childProcess.exec.mockImplementationOnce((command, callback) => {
 			callback(null, '{}', 'Some note')
