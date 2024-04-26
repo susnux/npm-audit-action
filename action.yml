@@ -1,18 +1,22 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'NPM audit'
+description: 'Runs NPM audit fix and created a Markdown output on what changed'
+author: 'susnux'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
-    required: true
-    default: '1000'
+  working-directory:
+    description: 'The directory where to run npm audit'
+    required: false
+    default: ''
+  fix:
+    description: "If also 'npm audit fix' should be run. Otherwise just the Markdown output is generated."
+    required: false
+    default: true
 
 # Define your outputs here.
 outputs:
-  time:
-    description: 'Your output description here'
+  markdown:
+    description: "Formatted output what can be fixed with 'npm audit fix'"
 
 runs:
   using: node20

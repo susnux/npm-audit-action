@@ -1,7 +1,6 @@
 env:
   commonjs: true
   es6: true
-  jest: true
   node: true
 
 globals:
@@ -15,8 +14,6 @@ ignorePatterns:
   - '**/coverage/.*'
   - '*.json'
 
-parser: '@babel/eslint-parser'
-
 parserOptions:
   ecmaVersion: 2023
   sourceType: module
@@ -24,16 +21,11 @@ parserOptions:
   babelOptions:
     babelrc: false
     configFile: false
-    presets:
-      - jest
-
-plugins:
-  - jest
 
 extends:
   - eslint:recommended
   - plugin:github/recommended
-  - plugin:jest/recommended
+  - plugin:@typescript-eslint/recommended
 
 rules:
   {
@@ -43,8 +35,9 @@ rules:
     'i18n-text/no-en': 'off',
     'import/no-commonjs': 'off',
     'import/no-namespace': 'off',
+    'import/no-unresolved': 'off',
     'no-console': 'off',
     'no-unused-vars': 'off',
     'prettier/prettier': 'error',
-    'semi': 'off'
+    'semi': 'off',
   }
