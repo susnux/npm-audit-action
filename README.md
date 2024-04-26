@@ -38,9 +38,9 @@ The idea is to run this action together with the [create-pull-request](https://g
 
 ### Action outputs
 
-| Name               | Description                                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| `markdown`         | The formatted markdown output                                                               |
-| `issues-fixed`     | Number of issues fixed, only set if input value `fix` was not set to `false`                |
-| `issues-fixable`   | Number of issues fixable with `npm audit fix` (same as `issues-fixed` if `fix` was enabled) |
-| `issues-unfixable` | Number of issues not fixable with `npm audit fix`                                           |
+| Name               | Description                                       |
+| ------------------ | ------------------------------------------------- |
+| `markdown`         | The formatted markdown output                     |
+| `issues-total`     | Total number of issues found                      |
+| `issues-fixable`   | Number of issues fixable with `npm audit fix`     |
+| `issues-unfixable` | Number of issues not fixable with `npm audit fix` |

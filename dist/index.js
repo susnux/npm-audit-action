@@ -722,7 +722,7 @@ var require_tunnel = __commonJS({
         connectOptions.headers = connectOptions.headers || {};
         connectOptions.headers["Proxy-Authorization"] = "Basic " + new Buffer(connectOptions.proxyAuth).toString("base64");
       }
-      debug("making CONNECT request");
+      debug2("making CONNECT request");
       var connectReq = self.request(connectOptions);
       connectReq.useChunkedEncodingByDefault = false;
       connectReq.once("response", onResponse);
@@ -742,7 +742,7 @@ var require_tunnel = __commonJS({
         connectReq.removeAllListeners();
         socket.removeAllListeners();
         if (res.statusCode !== 200) {
-          debug(
+          debug2(
             "tunneling socket could not be established, statusCode=%d",
             res.statusCode
           );
@@ -754,7 +754,7 @@ var require_tunnel = __commonJS({
           return;
         }
         if (head.length > 0) {
-          debug("got illegal response body from proxy");
+          debug2("got illegal response body from proxy");
           socket.destroy();
           var error = new Error("got illegal response body from proxy");
           error.code = "ECONNRESET";
@@ -762,13 +762,13 @@ var require_tunnel = __commonJS({
           self.removeSocket(placeholder);
           return;
         }
-        debug("tunneling connection has established");
+        debug2("tunneling connection has established");
         self.sockets[self.sockets.indexOf(placeholder)] = socket;
         return cb(socket);
       }
       function onError(cause) {
         connectReq.removeAllListeners();
-        debug(
+        debug2(
           "tunneling socket could not be established, cause=%s\n",
           cause.message,
           cause.stack
@@ -830,9 +830,9 @@ var require_tunnel = __commonJS({
       }
       return target;
     }
-    var debug;
+    var debug2;
     if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
-      debug = function() {
+      debug2 = function() {
         var args = Array.prototype.slice.call(arguments);
         if (typeof args[0] === "string") {
           args[0] = "TUNNEL: " + args[0];
@@ -842,10 +842,10 @@ var require_tunnel = __commonJS({
         console.error.apply(console, args);
       };
     } else {
-      debug = function() {
+      debug2 = function() {
       };
     }
-    exports2.debug = debug;
+    exports2.debug = debug2;
   }
 });
 
@@ -1153,12 +1153,12 @@ var require_lib = __commonJS({
             throw new Error("Client has already been disposed.");
           }
           const parsedUrl = new URL(requestUrl);
-          let info = this._prepareRequest(verb, parsedUrl, headers);
+          let info2 = this._prepareRequest(verb, parsedUrl, headers);
           const maxTries = this._allowRetries && RetryableHttpVerbs.includes(verb) ? this._maxRetries + 1 : 1;
           let numTries = 0;
           let response;
           do {
-            response = yield this.requestRaw(info, data);
+            response = yield this.requestRaw(info2, data);
             if (response && response.message && response.message.statusCode === HttpCodes.Unauthorized) {
               let authenticationHandler;
               for (const handler of this.handlers) {
@@ -1168,7 +1168,7 @@ var require_lib = __commonJS({
                 }
               }
               if (authenticationHandler) {
-                return authenticationHandler.handleAuthentication(this, info, data);
+                return authenticationHandler.handleAuthentication(this, info2, data);
               } else {
                 return response;
               }
@@ -1191,8 +1191,8 @@ var require_lib = __commonJS({
                   }
                 }
               }
-              info = this._prepareRequest(verb, parsedRedirectUrl, headers);
-              response = yield this.requestRaw(info, data);
+              info2 = this._prepareRequest(verb, parsedRedirectUrl, headers);
+              response = yield this.requestRaw(info2, data);
               redirectsRemaining--;
             }
             if (!response.message.statusCode || !HttpResponseRetryCodes.includes(response.message.statusCode)) {
@@ -1221,7 +1221,7 @@ var require_lib = __commonJS({
        * @param info
        * @param data
        */
-      requestRaw(info, data) {
+      requestRaw(info2, data) {
         return __awaiter(this, void 0, void 0, function* () {
           return new Promise((resolve, reject) => {
             function callbackForResult(err, res) {
@@ -1233,7 +1233,7 @@ var require_lib = __commonJS({
                 resolve(res);
               }
             }
-            this.requestRawWithCallback(info, data, callbackForResult);
+            this.requestRawWithCallback(info2, data, callbackForResult);
           });
         });
       }
@@ -1243,12 +1243,12 @@ var require_lib = __commonJS({
        * @param data
        * @param onResult
        */
-      requestRawWithCallback(info, data, onResult) {
+      requestRawWithCallback(info2, data, onResult) {
         if (typeof data === "string") {
-          if (!info.options.headers) {
-            info.options.headers = {};
+          if (!info2.options.headers) {
+            info2.options.headers = {};
           }
-          info.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
+          info2.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
         }
         let callbackCalled = false;
         function handleResult(err, res) {
@@ -1257,7 +1257,7 @@ var require_lib = __commonJS({
             onResult(err, res);
           }
         }
-        const req = info.httpModule.request(info.options, (msg) => {
+        const req = info2.httpModule.request(info2.options, (msg) => {
           const res = new HttpClientResponse(msg);
           handleResult(void 0, res);
         });
@@ -1269,7 +1269,7 @@ var require_lib = __commonJS({
           if (socket) {
             socket.end();
           }
-          handleResult(new Error(`Request timeout: ${info.options.path}`));
+          handleResult(new Error(`Request timeout: ${info2.options.path}`));
         });
         req.on("error", function(err) {
           handleResult(err);
@@ -1296,27 +1296,27 @@ var require_lib = __commonJS({
         return this._getAgent(parsedUrl);
       }
       _prepareRequest(method, requestUrl, headers) {
-        const info = {};
-        info.parsedUrl = requestUrl;
-        const usingSsl = info.parsedUrl.protocol === "https:";
-        info.httpModule = usingSsl ? https : http;
+        const info2 = {};
+        info2.parsedUrl = requestUrl;
+        const usingSsl = info2.parsedUrl.protocol === "https:";
+        info2.httpModule = usingSsl ? https : http;
         const defaultPort = usingSsl ? 443 : 80;
-        info.options = {};
-        info.options.host = info.parsedUrl.hostname;
-        info.options.port = info.parsedUrl.port ? parseInt(info.parsedUrl.port) : defaultPort;
-        info.options.path = (info.parsedUrl.pathname || "") + (info.parsedUrl.search || "");
-        info.options.method = method;
-        info.options.headers = this._mergeHeaders(headers);
+        info2.options = {};
+        info2.options.host = info2.parsedUrl.hostname;
+        info2.options.port = info2.parsedUrl.port ? parseInt(info2.parsedUrl.port) : defaultPort;
+        info2.options.path = (info2.parsedUrl.pathname || "") + (info2.parsedUrl.search || "");
+        info2.options.method = method;
+        info2.options.headers = this._mergeHeaders(headers);
         if (this.userAgent != null) {
-          info.options.headers["user-agent"] = this.userAgent;
+          info2.options.headers["user-agent"] = this.userAgent;
         }
-        info.options.agent = this._getAgent(info.parsedUrl);
+        info2.options.agent = this._getAgent(info2.parsedUrl);
         if (this.handlers) {
           for (const handler of this.handlers) {
-            handler.prepareRequest(info.options);
+            handler.prepareRequest(info2.options);
           }
         }
-        return info;
+        return info2;
       }
       _mergeHeaders(headers) {
         if (this.requestOptions && this.requestOptions.headers) {
@@ -2091,7 +2091,7 @@ var require_core = __commonJS({
       process.env["PATH"] = `${inputPath}${path.delimiter}${process.env["PATH"]}`;
     }
     exports2.addPath = addPath;
-    function getInput(name, options) {
+    function getInput2(name, options) {
       const val = process.env[`INPUT_${name.replace(/ /g, "_").toUpperCase()}`] || "";
       if (options && options.required && !val) {
         throw new Error(`Input required and not supplied: ${name}`);
@@ -2101,19 +2101,19 @@ var require_core = __commonJS({
       }
       return val.trim();
     }
-    exports2.getInput = getInput;
+    exports2.getInput = getInput2;
     function getMultilineInput(name, options) {
-      const inputs = getInput(name, options).split("\n").filter((x) => x !== "");
+      const inputs = getInput2(name, options).split("\n").filter((x) => x !== "");
       if (options && options.trimWhitespace === false) {
         return inputs;
       }
       return inputs.map((input) => input.trim());
     }
     exports2.getMultilineInput = getMultilineInput;
-    function getBooleanInput(name, options) {
+    function getBooleanInput2(name, options) {
       const trueValue = ["true", "True", "TRUE"];
       const falseValue = ["false", "False", "FALSE"];
-      const val = getInput(name, options);
+      const val = getInput2(name, options);
       if (trueValue.includes(val))
         return true;
       if (falseValue.includes(val))
@@ -2121,8 +2121,8 @@ var require_core = __commonJS({
       throw new TypeError(`Input does not meet YAML 1.2 "Core Schema" specification: ${name}
 Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
     }
-    exports2.getBooleanInput = getBooleanInput;
-    function setOutput(name, value) {
+    exports2.getBooleanInput = getBooleanInput2;
+    function setOutput2(name, value) {
       const filePath = process.env["GITHUB_OUTPUT"] || "";
       if (filePath) {
         return file_command_1.issueFileCommand("OUTPUT", file_command_1.prepareKeyValueMessage(name, value));
@@ -2130,24 +2130,24 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       process.stdout.write(os.EOL);
       command_1.issueCommand("set-output", { name }, utils_1.toCommandValue(value));
     }
-    exports2.setOutput = setOutput;
+    exports2.setOutput = setOutput2;
     function setCommandEcho(enabled) {
       command_1.issue("echo", enabled ? "on" : "off");
     }
     exports2.setCommandEcho = setCommandEcho;
-    function setFailed(message) {
+    function setFailed2(message) {
       process.exitCode = ExitCode.Failure;
       error(message);
     }
-    exports2.setFailed = setFailed;
+    exports2.setFailed = setFailed2;
     function isDebug() {
       return process.env["RUNNER_DEBUG"] === "1";
     }
     exports2.isDebug = isDebug;
-    function debug(message) {
+    function debug2(message) {
       command_1.issueCommand("debug", {}, message);
     }
-    exports2.debug = debug;
+    exports2.debug = debug2;
     function error(message, properties = {}) {
       command_1.issueCommand("error", utils_1.toCommandProperties(properties), message instanceof Error ? message.toString() : message);
     }
@@ -2160,10 +2160,10 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       command_1.issueCommand("notice", utils_1.toCommandProperties(properties), message instanceof Error ? message.toString() : message);
     }
     exports2.notice = notice;
-    function info(message) {
+    function info2(message) {
       process.stdout.write(message + os.EOL);
     }
-    exports2.info = info;
+    exports2.info = info2;
     function startGroup(name) {
       command_1.issue("group", name);
     }
@@ -2296,14 +2296,17 @@ var require_css_escape = __commonJS({
 var import_node_child_process = require("node:child_process");
 var import_promises = require("node:fs/promises");
 var import_node_path = require("node:path");
-var import_core = __toESM(require_core(), 1);
-var import_css = __toESM(require_css_escape(), 1);
+var core = __toESM(require_core());
+var import_css = __toESM(require_css_escape());
+function isFixable(data) {
+  return typeof data === "object" && "fixAvailable" in data && data.fixAvailable;
+}
 function runNpmAudit(fix = false) {
-  import_core.default.debug(`Running npm audit ${fix ? "fix" : ""}\u2026`);
+  core.debug(`Running npm audit ${fix ? "fix" : ""}\u2026`);
   return new Promise(
     (resolve, reject) => (0, import_node_child_process.exec)(`npm audit --json ${fix ? "fix" : ""}`, (error, stdout, stderr) => {
       if (stderr) {
-        import_core.default.debug(`[npm audit]: ${stderr}`);
+        core.debug(`[npm audit]: ${stderr}`);
       }
       if (error) {
         reject(error);
@@ -2314,10 +2317,8 @@ function runNpmAudit(fix = false) {
   );
 }
 async function formatNpmAuditOutput(data) {
-  const fixable = Object.values(data.vulnerabilities).filter(
-    ({ fixAvailable }) => fixAvailable
-  );
-  import_core.default.info(`Found ${fixable.length} fixable issues`);
+  const fixable = Object.values(data.vulnerabilities).filter(isFixable);
+  core.info(`Found ${fixable.length} fixable issues`);
   let output = "# Audit report\n";
   if (fixable.length === 0) {
     return `${output}No fixable problems found (${Object.values(data.vulnerabilities).length} unfixable)`;
@@ -2333,19 +2334,19 @@ This audit fix resolves ${fixable.length} of the total ${Object.values(data.vuln
   }
   output += "## Fixed vulnerabilities\n";
   for (const vul of fixable) {
-    const info = vul.via.find(
+    const info2 = vul.via.find(
       (via) => typeof via === "object" && via.title
     );
     output += `
 ### ${vul.name} <a href="#user-content-${CSS.escape(vul.name)}" id="${CSS.escape(vul.name)}">#</a>
 `;
-    if (info) {
-      const cvss = info.cvss?.score ? ` (CVSS ${info.cvss?.score})` : "";
-      output += `* ${info.title}
+    if (info2) {
+      const cvss = info2.cvss?.score ? ` (CVSS ${info2.cvss?.score})` : "";
+      output += `* ${info2.title}
 `;
-      output += `* Severity: **${info.severity}**${info.severity === "critical" ? " \u{1F6A8}" : ""}${cvss}
+      output += `* Severity: **${info2.severity}**${info2.severity === "critical" ? " \u{1F6A8}" : ""}${cvss}
 `;
-      output += `* Reference: [${info.url}](${info.url})
+      output += `* Reference: [${info2.url}](${info2.url})
 `;
     } else {
       output += `* Caused by vulnerable dependency:
@@ -2366,20 +2367,26 @@ This audit fix resolves ${fixable.length} of the total ${Object.values(data.vuln
 }
 async function run() {
   try {
-    const wd = import_core.default.getInput("working-directory", { required: false }) || process.env.GITHUB_WORKSPACE;
-    const outputPath = import_core.default.getInput("output-path", { required: false });
-    const fix = import_core.default.getBooleanInput("fix", { required: false });
+    const wd = core.getInput("working-directory", { required: false }) || process.env.GITHUB_WORKSPACE;
+    const outputPath = core.getInput("output-path", { required: false });
+    const fix = core.getBooleanInput("fix", { required: false });
     const resolvedWD = (0, import_node_path.resolve)(wd);
-    import_core.default.debug(`Setting working directory to "${resolvedWD}".`);
+    core.debug(`Setting working directory to "${resolvedWD}".`);
     process.chdir(resolvedWD);
     const output = await runNpmAudit();
     const data = JSON.parse(output);
+    const issues = Object.values(data.vulnerabilities);
+    const totalIssues = issues.length;
+    const fixableIssues = issues.filter(isFixable).length;
+    core.setOutput("issues-total", totalIssues);
+    core.setOutput("issues-fixable", fixableIssues);
+    core.setOutput("issues-unfixable", totalIssues - fixableIssues);
     const formattedOutput = await formatNpmAuditOutput(data);
-    import_core.default.setOutput("markdown", formattedOutput);
+    core.setOutput("markdown", formattedOutput);
     if (outputPath) {
       const resolvedPath = (0, import_node_path.resolve)(outputPath);
       if (!resolvedPath.startsWith((0, import_node_path.resolve)(process.env.GITHUB_WORKSPACE))) {
-        import_core.default.setFailed('Invalid "output-path"');
+        core.setFailed('Invalid "output-path"');
         return;
       }
       await (0, import_promises.writeFile)(resolvedPath, formattedOutput);
@@ -2388,7 +2395,7 @@ async function run() {
       await runNpmAudit(true);
     }
   } catch (error) {
-    import_core.default.setFailed(error.message);
+    core.setFailed(error.message);
   }
 }
 

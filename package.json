@@ -19,7 +19,6 @@
     "NPM",
     "audit"
   ],
-  "type": "module",
   "exports": {
     ".": "./dist/index.js"
   },

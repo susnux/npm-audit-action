@@ -1,9 +1,13 @@
 import { exec } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import { resolve as resolvePath } from 'node:path'
-import core from '@actions/core'
+import * as core from '@actions/core'
 
 import 'css.escape'
+
+function isFixable(data: unknown) {
+	return typeof data === 'object' && 'fixAvailable' in data && data.fixAvailable
+}
 
 /**
  * Run "npm audit" and return the stdout of that operation
@@ -31,13 +35,10 @@ export function runNpmAudit(fix = false): Promise<string> {
  * @param json The output JSON string
  * @return Formatted output as markdown
  */
-export async function formatNpmAuditOutput(json: string) {
-	const data = JSON.parse(json)
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function formatNpmAuditOutput(data: Record<string, any>) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const fixable = Object.values<any>(data.vulnerabilities).filter(
-		({ fixAvailable }) => fixAvailable,
-	)
+	const fixable: any[] = Object.values(data.vulnerabilities).filter(isFixable)
 	core.info(`Found ${fixable.length} fixable issues`)
 
 	let output = '# Audit report\n'
@@ -98,7 +99,15 @@ export async function run() {
 		process.chdir(resolvedWD)
 
 		const output = await runNpmAudit()
-		const formattedOutput = await formatNpmAuditOutput(output)
+		const data = JSON.parse(output)
+		const issues = Object.values(data.vulnerabilities) as never[]
+		const totalIssues = issues.length
+		const fixableIssues = issues.filter(isFixable).length
+		core.setOutput('issues-total', totalIssues)
+		core.setOutput('issues-fixable', fixableIssues)
+		core.setOutput('issues-unfixable', totalIssues - fixableIssues)
+
+		const formattedOutput = await formatNpmAuditOutput(data)
 		core.setOutput('markdown', formattedOutput)
 
 		if (outputPath) {
