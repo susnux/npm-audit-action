@@ -1,3 +1,5 @@
+import type { NPMAudit, NPMAuditFix, Vulnerability, VulnerabilityReport } from './npm-audit'
+
 import { exec } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import { resolve as resolvePath } from 'node:path'
@@ -5,8 +7,12 @@ import * as core from '@actions/core'
 
 import 'css.escape'
 
-function isFixable(data: unknown) {
+function isFixable(data: Vulnerability): data is Vulnerability & { fixAvailable: true } {
 	return typeof data === 'object' && 'fixAvailable' in data && data.fixAvailable
+}
+
+function isReport(data: string | VulnerabilityReport): data is VulnerabilityReport {
+	return typeof data === 'object' && !!data.title
 }
 
 /**
@@ -35,10 +41,8 @@ export function runNpmAudit(fix = false): Promise<string> {
  * @param json The output JSON string
  * @return Formatted output as markdown
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function formatNpmAuditOutput(data: Record<string, any>) {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const fixable: any[] = Object.values(data.vulnerabilities).filter(isFixable)
+export async function formatNpmAuditOutput(data: NPMAudit) {
+	const fixable = Object.values(data.vulnerabilities).filter(isFixable)
 	core.info(`Found ${fixable.length} fixable issues`)
 
 	let output = '# Audit report\n'
@@ -57,9 +61,7 @@ This audit fix resolves ${fixable.length} of the total ${Object.values(data.vuln
 
 	output += '## Fixed vulnerabilities\n'
 	for (const vul of fixable) {
-		const info = vul.via.find(
-			(via: string | { title: string }) => typeof via === 'object' && via.title,
-		)
+		const info = vul.via.find(isReport)
 		output += `\n### ${vul.name} <a href="#user-content-${CSS.escape(vul.name)}" id="${CSS.escape(vul.name)}">#</a>\n`
 
 		if (info) {
@@ -69,7 +71,7 @@ This audit fix resolves ${fixable.length} of the total ${Object.values(data.vuln
 			output += `* Reference: [${info.url}](${info.url})\n`
 		} else {
 			output += `* Caused by vulnerable dependency:\n`
-			for (const via of vul.via) {
+			for (const via of vul.via as string[]) {
 				output += `  * [${via}](#user-content-${CSS.escape(via)})\n`
 			}
 		}
@@ -80,6 +82,9 @@ This audit fix resolves ${fixable.length} of the total ${Object.values(data.vuln
 		}
 	}
 }
+
+// Typescript helper
+const isNPMAuditFix = (data: NPMAudit | NPMAuditFix): data is NPMAuditFix => 'audit' in data
 
 /**
  * The main function for the action.
@@ -99,8 +104,9 @@ export async function run() {
 		process.chdir(resolvedWD)
 
 		const output = await runNpmAudit(fix)
-		let data = JSON.parse(output)
-		if (fix) {
+		let data: NPMAudit | NPMAuditFix = JSON.parse(output)
+		if (isNPMAuditFix(data)) {
+			data = data as NPMAuditFix
 			// Print some information
 			core.info(`[npm audit] Added   ${data.added} packages`)
 			core.info(`[npm audit] Removed ${data.removed} packages`)
@@ -110,7 +116,7 @@ export async function run() {
 			data = data.audit
 		}
 
-		const issues = Object.values(data.vulnerabilities) as never[]
+		const issues = Object.values(data.vulnerabilities)
 		const totalIssues = issues.length
 		const fixableIssues = issues.filter(isFixable).length
 		core.setOutput('issues-total', totalIssues)

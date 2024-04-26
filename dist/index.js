@@ -2301,6 +2301,9 @@ var import_css = __toESM(require_css_escape());
 function isFixable(data) {
   return typeof data === "object" && "fixAvailable" in data && data.fixAvailable;
 }
+function isReport(data) {
+  return typeof data === "object" && !!data.title;
+}
 function runNpmAudit(fix = false) {
   core.debug(`Running npm audit ${fix ? "fix" : ""}\u2026`);
   return new Promise(
@@ -2312,7 +2315,7 @@ function runNpmAudit(fix = false) {
         reject(error);
         return;
       }
-      resolve(stdout);
+      resolve(stdout.slice(stdout.indexOf("{")));
     })
   );
 }
@@ -2334,9 +2337,7 @@ This audit fix resolves ${fixable.length} of the total ${Object.values(data.vuln
   }
   output += "## Fixed vulnerabilities\n";
   for (const vul of fixable) {
-    const info2 = vul.via.find(
-      (via) => typeof via === "object" && via.title
-    );
+    const info2 = vul.via.find(isReport);
     output += `
 ### ${vul.name} <a href="#user-content-${CSS.escape(vul.name)}" id="${CSS.escape(vul.name)}">#</a>
 `;
@@ -2365,6 +2366,7 @@ This audit fix resolves ${fixable.length} of the total ${Object.values(data.vuln
     }
   }
 }
+var isNPMAuditFix = (data) => "audit" in data;
 async function run() {
   try {
     const wd = core.getInput("working-directory", { required: false }) || process.env.GITHUB_WORKSPACE;
@@ -2373,8 +2375,16 @@ async function run() {
     const resolvedWD = (0, import_node_path.resolve)(wd);
     core.debug(`Setting working directory to "${resolvedWD}".`);
     process.chdir(resolvedWD);
-    const output = await runNpmAudit();
-    const data = JSON.parse(output);
+    const output = await runNpmAudit(fix);
+    let data = JSON.parse(output);
+    if (isNPMAuditFix(data)) {
+      data = data;
+      core.info(`[npm audit] Added   ${data.added} packages`);
+      core.info(`[npm audit] Removed ${data.removed} packages`);
+      core.info(`[npm audit] Changed ${data.changed} packages`);
+      core.info(`[npm audit] Audited ${data.audited} packages`);
+      data = data.audit;
+    }
     const issues = Object.values(data.vulnerabilities);
     const totalIssues = issues.length;
     const fixableIssues = issues.filter(isFixable).length;
@@ -2390,9 +2400,6 @@ async function run() {
         return;
       }
       await (0, import_promises.writeFile)(resolvedPath, formattedOutput);
-    }
-    if (fix) {
-      await runNpmAudit(true);
     }
   } catch (error) {
     core.setFailed(error.message);
