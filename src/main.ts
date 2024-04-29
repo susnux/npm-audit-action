@@ -24,14 +24,18 @@ export function runNpmAudit(fix = false): Promise<string> {
 
 	return new Promise((resolve, reject) =>
 		exec(`npm audit --json ${fix ? 'fix' : ''}`, (error, stdout, stderr) => {
+			if (error) {
+				core.debug(`[npm audit] Error: ${error.message}`)
+			}
 			if (stderr) {
 				core.debug(`[npm audit]: ${stderr}`)
 			}
-			if (error) {
-				reject(error)
+			if (stdout) {
+				core.debug(`[npm audit]: ${stdout}`)
+				resolve(stdout.slice(stdout.indexOf('{')))
 				return
 			}
-			resolve(stdout.slice(stdout.indexOf('{')))
+			reject(error)
 		}),
 	)
 }
@@ -41,7 +45,7 @@ export function runNpmAudit(fix = false): Promise<string> {
  * @param json The output JSON string
  * @return Formatted output as markdown
  */
-export async function formatNpmAuditOutput(data: NPMAudit) {
+export async function formatNpmAuditOutput(data: NPMAudit): Promise<string> {
 	const fixable = Object.values(data.vulnerabilities).filter(isFixable)
 	core.info(`Found ${fixable.length} fixable issues`)
 
@@ -81,6 +85,7 @@ This audit fix resolves ${fixable.length} of the total ${Object.values(data.vuln
 			output += `  * \`${node}\`\n`
 		}
 	}
+	return output
 }
 
 // Typescript helper
@@ -103,7 +108,7 @@ export async function run() {
 		core.debug(`Setting working directory to "${resolvedWD}".`)
 		process.chdir(resolvedWD)
 
-		const output = await runNpmAudit(fix)
+		const output = await runNpmAudit()
 		let data: NPMAudit | NPMAuditFix = JSON.parse(output)
 		if (isNPMAuditFix(data)) {
 			data = data as NPMAuditFix
@@ -133,6 +138,11 @@ export async function run() {
 				return
 			}
 			await writeFile(resolvedPath, formattedOutput)
+		}
+
+		if (fix) {
+			core.info('Running `npm audit` with `fix` flag')
+			await runNpmAudit(true)
 		}
 	} catch (error) {
 		// Fail the workflow run if an error occurs

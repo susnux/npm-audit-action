@@ -12,6 +12,9 @@ inputs:
     description: "If also 'npm audit fix' should be run. Otherwise just the Markdown output is generated."
     required: false
     default: true
+  output-path:
+    description: Optional output file for formatte markown
+    required: false
 
 # Define your outputs here.
 outputs:

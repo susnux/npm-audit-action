@@ -2308,14 +2308,18 @@ function runNpmAudit(fix = false) {
   core.debug(`Running npm audit ${fix ? "fix" : ""}\u2026`);
   return new Promise(
     (resolve, reject) => (0, import_node_child_process.exec)(`npm audit --json ${fix ? "fix" : ""}`, (error, stdout, stderr) => {
+      if (error) {
+        core.debug(`[npm audit] Error: ${error.message}`);
+      }
       if (stderr) {
         core.debug(`[npm audit]: ${stderr}`);
       }
-      if (error) {
-        reject(error);
+      if (stdout) {
+        core.debug(`[npm audit]: ${stdout}`);
+        resolve(stdout.slice(stdout.indexOf("{")));
         return;
       }
-      resolve(stdout.slice(stdout.indexOf("{")));
+      reject(error);
     })
   );
 }
@@ -2365,6 +2369,7 @@ This audit fix resolves ${fixable.length} of the total ${Object.values(data.vuln
 `;
     }
   }
+  return output;
 }
 var isNPMAuditFix = (data) => "audit" in data;
 async function run() {
@@ -2375,7 +2380,7 @@ async function run() {
     const resolvedWD = (0, import_node_path.resolve)(wd);
     core.debug(`Setting working directory to "${resolvedWD}".`);
     process.chdir(resolvedWD);
-    const output = await runNpmAudit(fix);
+    const output = await runNpmAudit();
     let data = JSON.parse(output);
     if (isNPMAuditFix(data)) {
       data = data;
@@ -2400,6 +2405,10 @@ async function run() {
         return;
       }
       await (0, import_promises.writeFile)(resolvedPath, formattedOutput);
+    }
+    if (fix) {
+      core.info("Running `npm audit` with `fix` flag");
+      await runNpmAudit(true);
     }
   } catch (error) {
     core.setFailed(error.message);
