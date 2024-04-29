@@ -18,14 +18,14 @@ The idea is to run this action together with the [create-pull-request](https://g
   uses: susnux/npm-audit-action
   with:
       # Optionally set an output path
-      - output-path: pr-content.md
+      output-path: pr-content.md
 
 - name: Create Pull Request
   uses: peter-evans/create-pull-request@v6
   with:
-      - body: { { steps.npm-audit.outputs.markdown } }
+      body: ${{ steps.npm-audit.outputs.markdown }}
       # Alternativly use the output file
-      - body-path: pr-content.md
+      body-path: pr-content.md
 ```
 
 ### Action inputs
