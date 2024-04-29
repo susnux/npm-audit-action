@@ -61,7 +61,7 @@
   "dependencies": {
     "@actions/core": "^1.10.1",
     "css.escape": "^1.5.1",
-    "tough-cookie": "^4.1.0"
+    "tough-cookie": "^4.1.4"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.5.2",
