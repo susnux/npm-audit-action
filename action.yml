@@ -1,6 +1,10 @@
-name: 'NPM audit'
+name: 'Run NPM audit'
 description: 'Runs NPM audit fix and created a Markdown output on what changed'
 author: 'susnux'
+
+branding:
+  icon: shield
+  color: green
 
 # Define your inputs here.
 inputs:
